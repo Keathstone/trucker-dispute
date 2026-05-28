@@ -443,8 +443,9 @@ fetch('data/fmcsa_regs.json').then(r=>r.json()).then(data => {
 })();
 
 // ===== BACKEND CONFIG =====
-// Change this to your deployed backend URL once it's live
-const BACKEND_URL = localStorage.getItem('trucker_dispute_backend') || 'http://localhost:3001';
+// Deployed: https://trucker-dispute-server.onrender.com
+// Override via localStorage.setItem('trucker_dispute_backend', 'http://localhost:3001')
+const BACKEND_URL = localStorage.getItem('trucker_dispute_backend') || 'https://trucker-dispute-server.onrender.com';
 
 // ===== STEP 1: PHOTOS =====
 const uploadArea = document.getElementById('uploadArea');
