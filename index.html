@@ -350,6 +350,21 @@
     <button class="voice-btn" id="voiceBtn">🎤 Tap to Speak</button>
   </div>
 
+  <!-- AUTO-FILLED TICKET INFO (from scanned photo) -->
+  <div class="step" id="stepTicketInfo" style="display:none;">
+    <h2><span class="num" style="background:#22c55e;">⟳</span>Ticket Details <span class="badge" style="background:#22c55e;">Auto-filled</span></h2>
+    <p style="color:#94a3b8;font-size:0.85rem;margin-bottom:8px;">These were read from your ticket photo. Edit if needed.</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+      <div><label style="color:#94a3b8;font-size:0.75rem;">Driver Name</label><input type="text" id="driverName" placeholder="Auto-fill"></div>
+      <div><label style="color:#94a3b8;font-size:0.75rem;">DOT Number</label><input type="text" id="dotNumber" placeholder="Auto-fill"></div>
+      <div><label style="color:#94a3b8;font-size:0.75rem;">Carrier Name</label><input type="text" id="carrierName" placeholder="Auto-fill"></div>
+      <div><label style="color:#94a3b8;font-size:0.75rem;">Citation #</label><input type="text" id="citationNumber" placeholder="Auto-fill"></div>
+      <div><label style="color:#94a3b8;font-size:0.75rem;">Regulation Cited</label><input type="text" id="regulationCited" placeholder="Auto-fill"></div>
+      <div><label style="color:#94a3b8;font-size:0.75rem;">State</label><input type="text" id="violationState" placeholder="Auto-fill"></div>
+      <div style="grid-column:span 2;"><label style="color:#94a3b8;font-size:0.75rem;">Violation Date</label><input type="text" id="violationDate" placeholder="Auto-fill"></div>
+    </div>
+  </div>
+
   <!-- STEP 3: Check + Generate -->
   <div class="loading" id="loading">
     <div class="spinner"></div>
@@ -408,6 +423,9 @@ fetch('data/fmcsa_regs.json').then(r=>r.json()).then(data => {
   REGS = data.sections || [];
 }).catch(() => {});
 
+// ===== BACKEND CONFIG =====
+const BACKEND_URL = 'https://trucker-dispute-backend.up.railway.app';
+
 // ===== STEP 1: PHOTOS =====
 const uploadArea = document.getElementById('uploadArea');
 const fileInput = document.getElementById('fileInput');
@@ -456,22 +474,39 @@ function handleFiles(files) {
 }
 
 async function extractTextFromImage(dataUrl) {
-  // Client-side OCR via Tesseract (will load on first use)
-  if (typeof Tesseract === 'undefined') {
-    // Try OCR with built-in canvas approach
-    try {
-      const resp = await fetch(dataUrl);
-      const blob = await resp.blob();
-      // Use Tesseract from CDN
-      const script = document.createElement('script');
-      script.src = 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';
-      document.head.appendChild(script);
-      await new Promise(r => script.onload = r);
-      const { data: { text } } = await Tesseract.recognize(blob, 'eng');
-      if (text.trim().length > 10) return text.trim();
-    } catch(e) {}
+  try {
+    // Convert dataUrl to blob for upload
+    const resp = await fetch(dataUrl);
+    const blob = await resp.blob();
+    const formData = new FormData();
+    formData.append('photo', blob, 'ticket.jpg');
+
+    const result = await fetch(`${BACKEND_URL}/api/read-ticket`, {
+      method: 'POST',
+      body: formData
+    });
+    const json = await result.json();
+    if (json.success && json.data) {
+      state.ticketData = json.data;
+      const text = json.data.all_text_from_ticket || '';
+      // Show auto-fill panel
+      const ticketPanel = document.getElementById('stepTicketInfo');
+      if (ticketPanel) ticketPanel.style.display = 'block';
+      // Auto-fill form fields from ticket data
+      if (json.data.driver_name) document.getElementById('driverName').value = json.data.driver_name;
+      if (json.data.dot_number) document.getElementById('dotNumber').value = json.data.dot_number;
+      if (json.data.carrier_name) document.getElementById('carrierName').value = json.data.carrier_name;
+      if (json.data.violation_date) document.getElementById('violationDate').value = json.data.violation_date;
+      if (json.data.citation_number) document.getElementById('citationNumber').value = json.data.citation_number;
+      if (json.data.regulation_cited) document.getElementById('regulationCited').value = json.data.regulation_cited;
+      if (json.data.state) document.getElementById('violationState').value = json.data.state;
+      return text;
+    }
+    return 'Ticket uploaded. Backend processing available.';
+  } catch(e) {
+    console.error('OCR error:', e);
+    return `[Ticket uploaded — offline mode. Manual entry required.]`;
   }
-  return '[Violation paper uploaded — text extraction in browser pending]';
 }
 
 function renderPhotos() {
@@ -563,44 +598,69 @@ async function generateDispute() {
   resultCard.classList.remove('show');
   generateBtn.disabled = true;
 
-  // 1) Match violation story against regs
-  const match = matchRegs(state.driverStory + '\n' + (state.violationPhoto?.text || ''));
+  // Try AI backend for the full letter
+  try {
+    const payload = {
+      ticketData: state.ticketData || { all_text_from_ticket: (state.violationPhoto?.text || '') },
+      driverStory: state.driverStory,
+      carrierName: document.getElementById('carrierName')?.value || '[CARRIER LEGAL NAME]'
+    };
+    const response = await fetch(`${BACKEND_URL}/api/generate-letter`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const json = await response.json();
+    if (json.success && json.letter) {
+      state.letter = json.letter;
+      state.regAnalysis = json.reg_analysis || '';
+    }
+  } catch(e) {
+    console.warn('Backend unavailable, using local generation');
+  }
+
+  // Local reg matching as fallback
+  const ticketText = state.ticketData?.all_text_from_ticket || state.violationPhoto?.text || '';
+  const matchText = (state.driverStory || '') + '\n' + ticketText;
+  const match = matchRegs(matchText);
   state.matchedReg = match;
 
-  // 2) Generate letter using AI
-  const letter = await generateLetter(match);
-  state.letter = letter;
+  // If backend failed, generate locally
+  if (!state.letter) {
+    state.letter = generateLetterLocal(match);
+  }
 
-  // 3) Show results
+  // Show results
   loading.classList.remove('show');
   resultCard.classList.add('show');
 
   // Verdict
   const v = document.getElementById('verdict');
+  const regAnalysis = state.regAnalysis || match.reason || '';
   if (match.clean === true) {
     v.className = 'verdict clean';
     v.textContent = '✅ No Regulatory Basis — Strong Dispute Case';
-    v.innerHTML += '<br><span style="font-size:0.9rem;font-weight:400;">No valid FMCSR supports this citation. Officer likely misapplied or exceeded authority. Strong grounds for DataQs challenge under 49 C.F.R. § 386.72.</span>';
+    v.innerHTML += `<br><span style="font-size:0.9rem;font-weight:400;">${regAnalysis}</span>`;
   } else if (match.bullshit === true) {
     v.className = 'verdict bullshit';
     v.textContent = '🚩 Likely Misapplied — Dispute Recommended';
-    v.innerHTML += '<br><span style="font-size:0.9rem;font-weight:400;">A regulation exists, but the specific facts do not support this citation. The officer likely overreached. File a DataQs dispute with the evidence provided.</span>';
+    v.innerHTML += `<br><span style="font-size:0.9rem;font-weight:400;">${regAnalysis}</span>`;
   } else if (match.solid === true) {
     v.className = 'verdict legit';
     v.textContent = '⚠️ Valid Regulation — Dispute with Mitigating Evidence';
-    v.innerHTML += '<br><span style="font-size:0.9rem;font-weight:400;">A valid regulation exists for this category. Dispute the specific application, not the regulation itself. Focus on factual errors or mitigating circumstances.</span>';
+    v.innerHTML += `<br><span style="font-size:0.9rem;font-weight:400;">${regAnalysis}</span>`;
   } else {
     v.className = 'verdict unknown';
     v.textContent = '🔍 Unable to Determine — Letter Provided';
-    v.innerHTML += '<br><span style="font-size:0.9rem;font-weight:400;">Not enough information to assess regulatory basis. A generic dispute letter is provided. Review and edit before filing.</span>';
+    v.innerHTML += `<br><span style="font-size:0.9rem;font-weight:400;">${regAnalysis}</span>`;
   }
 
   // Show reg match
   if (match.section) {
     regMatchSection.style.display = 'block';
     regMatchSection.innerHTML = `
-      <div class="citation">📖 ${match.section}</div>
-      <div class="text">${match.reason || match.title || ''}</div>
+      <div class="citation">📖 49 C.F.R. § ${match.section} — ${match.title}</div>
+      <div class="text">${regAnalysis}</div>
     `;
   }
 
@@ -610,7 +670,7 @@ async function generateDispute() {
     defenseTip.innerHTML = `💡 <strong>Trucker Tip:</strong> ${match.tip}`;
   }
 
-  letterPreview.textContent = letter;
+  letterPreview.textContent = state.letter;
 }
 
 function matchRegs(text) {
@@ -710,7 +770,7 @@ function matchRegs(text) {
   };
 }
 
-async function generateLetter(match) {
+async function generateLetterLocal(match) {
   const today = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
   const story = state.driverStory || 'the challenged violation';
   const regFull = match.fullText || '';
