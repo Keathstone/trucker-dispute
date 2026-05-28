@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Trucker Dispute — Fight Your DOT Violation</title>
+<meta name="description" content="Snap your violation, explain what happened, get a DataQs-ready dispute letter with photo evidence.">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1a1a2e">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #0f0f1a;
+    color: #e0e0e0;
+    min-height: 100vh;
+  }
+  .container { max-width: 800px; margin: 0 auto; padding: 16px; }
+  
+  header {
+    text-align: center;
+    padding: 24px 0 16px;
+  }
+  header h1 {
+    font-size: 1.6rem;
+    background: linear-gradient(135deg, #f59e0b, #ef4444);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-weight: 800;
+  }
+  header p { color: #94a3b8; font-size: 0.9rem; margin-top: 4px; }
+
+  .step {
+    background: #1e1e32;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 16px;
+    border: 1px solid #2a2a45;
+  }
+  .step h2 {
+    font-size: 1.1rem;
+    margin-bottom: 12px;
+    color: #f59e0b;
+  }
+  .step h2 .num {
+    display: inline-block;
+    background: #f59e0b;
+    color: #0f0f1a;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    text-align: center;
+    line-height: 24px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    margin-right: 8px;
+  }
+
+  /* Upload area */
+  .upload-area {
+    border: 2px dashed #3b3b5a;
+    border-radius: 10px;
+    padding: 30px 16px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.2s;
+  }
+  .upload-area:hover, .upload-area.highlight {
+    border-color: #f59e0b;
+    background: #25253d;
+  }
+  .upload-area p { color: #94a3b8; font-size: 0.9rem; }
+  .upload-area .icon { font-size: 2rem; margin-bottom: 8px; }
+  .upload-area input[type="file"] { display: none; }
+
+  .photo-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .photo-thumb {
+    width: 80px; height: 80px;
+    border-radius: 8px;
+    overflow: hidden;
+    position: relative;
+    border: 2px solid #3b3b5a;
+  }
+  .photo-thumb img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+  }
+  .photo-thumb .remove {
+    position: absolute;
+    top: -6px; right: -6px;
+    width: 20px; height: 20px;
+    background: #ef4444;
+    border-radius: 50%;
+    border: none;
+    color: white;
+    font-size: 12px;
+    cursor: pointer;
+    line-height: 20px;
+    text-align: center;
+  }
+  .photo-tag {
+    position: absolute;
+    bottom: 0; left: 0;
+    width: 100%;
+    background: rgba(0,0,0,0.7);
+    font-size: 0.6rem;
+    text-align: center;
+    padding: 2px 0;
+    color: #94a3b8;
+  }
+
+  /* Violation paper preview */
+  .violation-preview {
+    margin-top: 12px;
+    background: #12121f;
+    border-radius: 8px;
+    padding: 12px;
+    font-size: 0.85rem;
+    max-height: 200px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    font-family: monospace;
+    color: #cbd5e1;
+    border: 1px solid #2a2a45;
+  }
+
+  textarea, input[type="text"] {
+    width: 100%;
+    background: #121221;
+    border: 1px solid #3b3b5a;
+    border-radius: 8px;
+    padding: 12px;
+    color: #e0e0e0;
+    font-size: 1rem;
+    resize: vertical;
+    min-height: 80px;
+    font-family: inherit;
+  }
+  textarea:focus { outline: none; border-color: #f59e0b; }
+
+  .btn {
+    display: block;
+    width: 100%;
+    padding: 14px;
+    border: none;
+    border-radius: 10px;
+    font-size: 1.1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity 0.2s;
+  }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn-primary {
+    background: linear-gradient(135deg, #f59e0b, #ef4444);
+    color: white;
+  }
+  .btn-secondary {
+    background: #2a2a45;
+    color: #e0e0e0;
+    margin-top: 8px;
+  }
+  .btn-success { background: #22c55e; color: white; }
+
+  .voice-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #2a2a45;
+    color: #e0e0e0;
+    border: 1px solid #3b3b5a;
+    border-radius: 8px;
+    padding: 10px 16px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    margin-top: 8px;
+    transition: all 0.2s;
+  }
+  .voice-btn.recording {
+    background: #ef4444;
+    border-color: #ef4444;
+    animation: pulse 1s infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+  }
+
+  .result-card {
+    background: #1a1a30;
+    border: 1px solid #2a2a45;
+    border-radius: 12px;
+    padding: 20px;
+    margin-top: 16px;
+    display: none;
+  }
+  .result-card.show { display: block; }
+  .result-card .verdict {
+    font-size: 1.3rem;
+    font-weight: 700;
+    margin-bottom: 12px;
+  }
+  .verdict.clean { color: #22c55e; }
+  .verdict.bullshit { color: #22c55e; }
+  .verdict.legit { color: #f59e0b; }
+  .verdict.unknown { color: #94a3b8; }
+
+  .reg-match {
+    background: #121221;
+    border-radius: 8px;
+    padding: 12px;
+    margin: 12px 0;
+    border-left: 3px solid #f59e0b;
+    font-size: 0.85rem;
+  }
+  .reg-match .citation { color: #f59e0b; font-weight: 700; }
+  .reg-match .text { color: #94a3b8; margin-top: 4px; }
+
+  .letter-preview {
+    background: #121221;
+    border-radius: 8px;
+    padding: 16px;
+    margin-top: 12px;
+    white-space: pre-wrap;
+    font-size: 0.85rem;
+    line-height: 1.5;
+    color: #cbd5e1;
+    max-height: 400px;
+    overflow-y: auto;
+    border: 1px solid #2a2a45;
+  }
+
+  .actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .actions .btn { font-size: 0.95rem; padding: 12px; }
+
+  .loading {
+    text-align: center;
+    padding: 40px 20px;
+    display: none;
+  }
+  .loading.show { display: block; }
+  .spinner {
+    width: 48px; height: 48px;
+    border: 4px solid #2a2a45;
+    border-top: 4px solid #f59e0b;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 12px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .badge {
+    display: inline-block;
+    background: #f59e0b;
+    color: #0f0f1a;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 700;
+  }
+
+  /* Modal for fullscreen letter */
+  .modal {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.85);
+    z-index: 999;
+    padding: 24px;
+    overflow-y: auto;
+  }
+  .modal.show { display: block; }
+  .modal-content {
+    background: white;
+    color: black;
+    max-width: 800px;
+    margin: 40px auto;
+    padding: 40px;
+    border-radius: 8px;
+    font-size: 1rem;
+    line-height: 1.6;
+    white-space: pre-wrap;
+  }
+  .modal-close {
+    float: right;
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: #333;
+  }
+
+  footer {
+    text-align: center;
+    padding: 24px 0 40px;
+    color: #4a4a6a;
+    font-size: 0.8rem;
+  }
+
+  @media (max-width: 480px) {
+    .container { padding: 12px; }
+    header h1 { font-size: 1.3rem; }
+    .step { padding: 16px; }
+    .actions { flex-direction: column; }
+  }
+
+  .trucker-tips {
+    background: #1a2a1e;
+    border: 1px solid #22c55e44;
+    border-radius: 8px;
+    padding: 12px;
+    margin: 12px 0;
+    display: none;
+  }
+  .trucker-tips.show { display: block; }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>⚖️ Trucker Dispute</h1>
+    <p>Snap your ticket → explain what happened → get a DataQs-ready letter</p>
+  </header>
+
+  <!-- STEP 1: Upload Photos -->
+  <div class="step" id="step1">
+    <h2><span class="num">1</span>Upload Photos</h2>
+    <div class="upload-area" id="uploadArea">
+      <div class="icon">📸</div>
+      <p><strong>Tap to upload</strong><br>Violation paper + photos of the truck/equipment</p>
+    </div>
+    <input type="file" id="fileInput" accept="image/*" multiple capture="environment">
+    <div class="photo-list" id="photoList"></div>
+    <div class="violation-preview" id="violationPreview" style="display:none"></div>
+  </div>
+
+  <!-- STEP 2: Tell your side -->
+  <div class="step" id="step2">
+    <h2><span class="num">2</span>Tell What Happened</h2>
+    <p style="color:#94a3b8;font-size:0.85rem;margin-bottom:8px;">Type or speak what the officer said and why you think it's wrong.</p>
+    <textarea id="driverStory" placeholder="e.g. Officer in TX said my electrical cord under the trailer was twisted too much. Lights worked fine. There's no violation for that."></textarea>
+    <button class="voice-btn" id="voiceBtn">🎤 Tap to Speak</button>
+  </div>
+
+  <!-- STEP 3: Check + Generate -->
+  <div class="loading" id="loading">
+    <div class="spinner"></div>
+    <p>Reading violation, checking regs, generating letter...</p>
+  </div>
+
+  <button class="btn btn-primary" id="generateBtn" disabled>
+    🔍 Check & Generate Dispute Letter
+  </button>
+
+  <!-- RESULTS -->
+  <div class="result-card" id="resultCard">
+    <div class="verdict" id="verdict">—</div>
+
+    <div id="regMatchSection" class="reg-match" style="display:none"></div>
+    <div id="defenseTip" class="trucker-tips"></div>
+
+    <h3 style="margin-top:16px;color:#94a3b8;">📄 Dispute Letter</h3>
+    <div class="letter-preview" id="letterPreview"></div>
+
+    <div class="actions" style="margin-top:16px;">
+      <button class="btn btn-primary" id="copyBtn" style="flex:1">📋 Copy</button>
+      <button class="btn btn-secondary" id="pdfBtn" style="flex:1">📥 Download PDF</button>
+    </div>
+  </div>
+
+  <!-- Letter Modal (big text for reading on phone) -->
+  <div class="modal" id="letterModal">
+    <div class="modal-content" id="modalContent"></div>
+    <div style="text-align:center;margin-top:12px;">
+      <button class="btn btn-secondary" onclick="document.getElementById('letterModal').classList.remove('show')" style="max-width:200px;margin:0 auto;">Close</button>
+    </div>
+  </div>
+
+  <footer>
+    <p>Not legal advice. You review before submitting. DataQs is an administrative system, not a court.</p>
+  </footer>
+</div>
+
+<script>
+// ===== STATE =====
+const state = {
+  violationPhoto: null,   // {file, dataUrl, text}
+  equipmentPhotos: [],    // [{file, dataUrl, tag}]
+  driverStory: '',
+  letter: '',
+  verdict: null,
+  matchedReg: null,
+};
+
+// ===== REGS DATABASE =====
+let REGS = [];
+let TRUCKER_TIPS = [];
+
+fetch('data/fmcsa_regs.json').then(r=>r.json()).then(data => {
+  REGS = data.sections || [];
+}).catch(() => {});
+
+// ===== STEP 1: PHOTOS =====
+const uploadArea = document.getElementById('uploadArea');
+const fileInput = document.getElementById('fileInput');
+const photoList = document.getElementById('photoList');
+const violationPreview = document.getElementById('violationPreview');
+
+uploadArea.addEventListener('click', () => fileInput.click());
+
+uploadArea.addEventListener('dragover', (e) => {
+  e.preventDefault();
+  uploadArea.classList.add('highlight');
+});
+uploadArea.addEventListener('dragleave', () => uploadArea.classList.remove('highlight'));
+uploadArea.addEventListener('drop', (e) => {
+  e.preventDefault();
+  uploadArea.classList.remove('highlight');
+  if (e.dataTransfer.files.length) handleFiles(e.dataTransfer.files);
+});
+
+fileInput.addEventListener('change', () => {
+  if (fileInput.files.length) handleFiles(fileInput.files);
+});
+
+function handleFiles(files) {
+  for (const file of files) {
+    if (!file.type.startsWith('image/')) continue;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const dataUrl = e.target.result;
+      // First photo = violation paper
+      if (!state.violationPhoto) {
+        state.violationPhoto = {file, dataUrl, text: ''};
+        extractTextFromImage(dataUrl).then(t => {
+          state.violationPhoto.text = t;
+          violationPreview.textContent = t;
+          violationPreview.style.display = 'block';
+        });
+      } else {
+        state.equipmentPhotos.push({file, dataUrl, tag: 'Evidence'});
+      }
+      renderPhotos();
+      updateGenerateBtn();
+    };
+    reader.readAsDataURL(file);
+  }
+}
+
+async function extractTextFromImage(dataUrl) {
+  // Client-side OCR via Tesseract (will load on first use)
+  if (typeof Tesseract === 'undefined') {
+    // Try OCR with built-in canvas approach
+    try {
+      const resp = await fetch(dataUrl);
+      const blob = await resp.blob();
+      // Use Tesseract from CDN
+      const script = document.createElement('script');
+      script.src = 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';
+      document.head.appendChild(script);
+      await new Promise(r => script.onload = r);
+      const { data: { text } } = await Tesseract.recognize(blob, 'eng');
+      if (text.trim().length > 10) return text.trim();
+    } catch(e) {}
+  }
+  return '[Violation paper uploaded — text extraction in browser pending]';
+}
+
+function renderPhotos() {
+  photoList.innerHTML = '';
+  if (state.violationPhoto) {
+    const div = document.createElement('div');
+    div.className = 'photo-thumb';
+    div.innerHTML = `<img src="${state.violationPhoto.dataUrl}"><span class="photo-tag" style="background:#f59e0b;color:#0f0f1a;">📋 TICKET</span>`;
+    photoList.appendChild(div);
+  }
+  state.equipmentPhotos.forEach((p, i) => {
+    const div = document.createElement('div');
+    div.className = 'photo-thumb';
+    div.innerHTML = `<img src="${p.dataUrl}"><span class="photo-tag">🛻 Evidence</span><button class="remove" onclick="removePhoto(${i})">×</button>`;
+    photoList.appendChild(div);
+  });
+}
+
+function removePhoto(idx) {
+  state.equipmentPhotos.splice(idx, 1);
+  renderPhotos();
+}
+
+// ===== STEP 2: STORY + VOICE =====
+const driverStory = document.getElementById('driverStory');
+const voiceBtn = document.getElementById('voiceBtn');
+
+driverStory.addEventListener('input', () => {
+  state.driverStory = driverStory.value;
+  updateGenerateBtn();
+});
+
+// Web Speech API
+let recognition = null;
+if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  recognition = new SR();
+  recognition.lang = 'en-US';
+  recognition.interimResults = false;
+  recognition.onresult = (e) => {
+    driverStory.value += (driverStory.value ? '\n' : '') + e.results[0][0].transcript;
+    state.driverStory = driverStory.value;
+    voiceBtn.classList.remove('recording');
+    voiceBtn.textContent = '🎤 Tap to Speak';
+    voiceBtn.style.animation = 'none';
+    updateGenerateBtn();
+  };
+  recognition.onerror = () => {
+    voiceBtn.classList.remove('recording');
+    voiceBtn.textContent = '🎤 Tap to Speak';
+  };
+  recognition.onend = () => {
+    voiceBtn.classList.remove('recording');
+    voiceBtn.textContent = '🎤 Tap to Speak';
+  };
+}
+
+voiceBtn.addEventListener('click', () => {
+  if (!recognition) { alert('Voice not supported in this browser. Type instead.'); return; }
+  if (voiceBtn.classList.contains('recording')) {
+    recognition.stop();
+    return;
+  }
+  voiceBtn.classList.add('recording');
+  voiceBtn.textContent = '🔴 Recording...';
+  recognition.start();
+});
+
+// ===== STEP 3: GENERATE =====
+const generateBtn = document.getElementById('generateBtn');
+const loading = document.getElementById('loading');
+const resultCard = document.getElementById('resultCard');
+const verdict = document.getElementById('verdict');
+const letterPreview = document.getElementById('letterPreview');
+const copyBtn = document.getElementById('copyBtn');
+const pdfBtn = document.getElementById('pdfBtn');
+const regMatchSection = document.getElementById('regMatchSection');
+const defenseTip = document.getElementById('defenseTip');
+
+function updateGenerateBtn() {
+  const ready = state.violationPhoto || state.driverStory.trim().length > 5;
+  generateBtn.disabled = !ready;
+}
+
+generateBtn.addEventListener('click', generateDispute);
+
+async function generateDispute() {
+  loading.classList.add('show');
+  resultCard.classList.remove('show');
+  generateBtn.disabled = true;
+
+  // 1) Match violation story against regs
+  const match = matchRegs(state.driverStory + '\n' + (state.violationPhoto?.text || ''));
+  state.matchedReg = match;
+
+  // 2) Generate letter using AI
+  const letter = await generateLetter(match);
+  state.letter = letter;
+
+  // 3) Show results
+  loading.classList.remove('show');
+  resultCard.classList.add('show');
+
+  // Verdict
+  const v = document.getElementById('verdict');
+  if (match.clean === true) {
+    v.className = 'verdict clean';
+    v.textContent = '✅ Nothing Wrong Here — Fight This';
+    v.innerHTML += '<br><span style="font-size:0.9rem;font-weight:400;">No valid regulation matches. Officer likely overstepped.</span>';
+  } else if (match.bullshit === true) {
+    v.className = 'verdict bullshit';
+    v.textContent = '🚩 Likely Wrong — Strong Dispute Case';
+    v.innerHTML += '<br><span style="font-size:0.9rem;font-weight:400;">The regulation cited may not apply to your situation.</span>';
+  } else if (match.solid === true) {
+    v.className = 'verdict legit';
+    v.textContent = '⚠️ Valid Safety Concern — Letter Still Worth Sending';
+    v.innerHTML += '<br><span style="font-size:0.9rem;font-weight:400;">This regulation exists, but you can still dispute with mitigating evidence.</span>';
+  } else {
+    v.className = 'verdict unknown';
+    v.textContent = '🔍 Could Not Determine';
+    v.innerHTML += '<br><span style="font-size:0.9rem;font-weight:400;">Not enough info. Continue with the letter and decide yourself.</span>';
+  }
+
+  // Show reg match
+  if (match.section) {
+    regMatchSection.style.display = 'block';
+    regMatchSection.innerHTML = `
+      <div class="citation">📖 ${match.section}</div>
+      <div class="text">${match.reason || match.title || ''}</div>
+    `;
+  }
+
+  // Show trucker tip if available
+  if (match.tip) {
+    defenseTip.classList.add('show');
+    defenseTip.innerHTML = `💡 <strong>Trucker Tip:</strong> ${match.tip}`;
+  }
+
+  letterPreview.textContent = letter;
+}
+
+function matchRegs(text) {
+  const t = (text || '').toLowerCase();
+  
+  // Check for 393.13 reflective tape
+  if (t.includes('reflective') || t.includes('reflector') || t.includes('tape') || t.includes('retroreflective') || t.includes('conspicuity')) {
+    return {
+      section: '393.13(d)',
+      title: 'Retroreflective sheeting and reflectors on combination vehicles',
+      clean: true,
+      reason: 'FMCSA 393.13(d) allows red AND white alternating reflective tape. Both colors are legal. A single-color citation is incorrect.',
+      tip: 'The officer might cite under 393.13(f) if tape is damaged/missing. Check your whole trailer, not just one spot.',
+      fullText: '393.13(d) allows alternating red and white retroreflective sheeting. A violation for red tape alone is incorrect under this section.'
+    };
+  }
+
+  // Check 393.28 wiring
+  if (t.includes('wire') || t.includes('electrical') || t.includes('cord') || t.includes('twist') || t.includes('hanging')) {
+    return {
+      section: '393.28',
+      title: 'Wiring systems must conform to SAE standards',
+      clean: false,
+      bullshit: true,
+      reason: 'While 393.28 requires wiring in good condition, a single twist with no exposed wires or functional issues is typically a warning item, not a violation. Officers overcite this.',
+      tip: 'If your lights worked and there was no bare wire, take pictures immediately. That\'s your best evidence.',
+      fullText: '393.28 — Wiring must conform to SAE requirements. Minor twisting without damage or exposed conductors is not a clear violation.'
+    };
+  }
+
+  // Check HOS violations
+  if (t.includes('hos') || t.includes('hours') || t.includes('log') || t.includes('drive time') || t.includes('14 hour') || t.includes('10 hour') || t.includes('elog') || t.includes('eld') || t.includes('recap')) {
+    return {
+      section: '395',
+      title: 'Hours of Service (Part 395)',
+      solid: true,
+      reason: 'A valid HOS regulation exists. Check if your logs/ELD showed compliance.',
+      tip: 'Personal conveyance (PC) is often misunderstood by officers. If you were going to a hotel or restaurant, PC may apply. Check §395.8.',
+      fullText: 'Part 395 governs HOS. Citations depend on exact log accuracy and whether personal conveyance rules apply.'
+    };
+  }
+
+  // Check brakes
+  if (t.includes('brake') || t.includes('air leak') || t.includes('push rod') || t.includes('adjustment')) {
+    return {
+      section: '393.42',
+      title: 'Brakes required on all wheels',
+      solid: true,
+      reason: 'A valid brake regulation exists. Frequency of citation suggests enforcement varies by state.',
+      tip: 'Brake citations are common. If you have proof of recent inspection or brake adjustment, include that in your dispute.',
+      fullText: '393.42 — Brakes required. Enforcement varies. Recent inspection records help your case.'
+    };
+  }
+
+  // Check lights
+  if (t.includes('light') || t.includes('lamp') || t.includes('tail') || t.includes('clearance') || t.includes('marker')) {
+    return {
+      section: '393.11',
+      title: 'Lamps and reflective devices',
+      solid: true,
+      reason: 'A valid lighting regulation exists. If lights were working, cite that in your dispute.',
+      tip: 'Take a video of all lights working (turn signals, brake, clearance, marker) right after the citation. Time-stamped proof wins.',
+      fullText: '393.11 — Lamps and reflective devices. Photos of working lights at the time of citation are your strongest defense.'
+    };
+  }
+
+  // Default — no clear match
+  return {
+    clean: true,
+    reason: 'No specific regulation found matching this description. This supports your dispute — the officer may have cited a regulation that doesn\'t apply.',
+    tip: 'When no specific reg matches, your dispute focus should be: (1) no applicable regulation exists, or (2) the condition was not a safety violation.',
+    fullText: 'No matching regulation found.'
+  };
+}
+
+async function generateLetter(match) {
+  const today = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+  const story = state.driverStory || '[driver explanation]';
+  const regInfo = match.fullText || '';
+  const tipped = match.tip ? `\n\nTrucker note: ${match.tip}` : '';
+  const verdictText = match.clean ? 'the cited regulation does not appear to apply' :
+                      match.bullshit ? 'the regulation may have been misapplied' :
+                      match.solid ? 'while a valid regulation exists, mitigating circumstances should be considered' :
+                      'further review is warranted';
+
+  return `DATAQs DISPUTE LETTER
+Generated: ${today}
+
+─────────────────────────────────
+CHALLENGED VIOLATION
+─────────────────────────────────
+
+${story}
+
+─────────────────────────────────
+REGULATION ANALYSIS
+─────────────────────────────────
+
+${regInfo}
+${tipped}
+
+─────────────────────────────────
+FORMAL DISPUTE STATEMENT
+─────────────────────────────────
+
+To the FMCSA DataQs System:
+
+I am writing to formally challenge the violation listed above. After reviewing the applicable Federal Motor Carrier Safety Regulations (FMCSRs), I believe ${verdictText}.
+
+${regInfo}
+
+I have attached photographic evidence supporting my position. The photos show the actual condition of the vehicle/equipment at the time of the citation.
+
+Based on the evidence and the applicable regulations, I respectfully request that this violation be removed from my/our CSA record.
+
+─────────────────────────────────
+ATTACHED EVIDENCE
+─────────────────────────────────
+
+${state.violationPhoto ? '• [1] Copy of violation citation — attached' : ''}
+${state.equipmentPhotos.length > 0 ? `• [2] Photographs of vehicle/equipment condition (${state.equipmentPhotos.length} photo(s)) — attached` : ''}
+
+─────────────────────────────────
+FILING INSTRUCTIONS
+─────────────────────────────────
+
+1. Go to: https://dataqs.fmcsa.dot.gov
+2. Select "File a DataQs Challenge"
+3. Enter your DOT number, date, and citation details
+4. Upload this letter as a PDF
+5. Upload photos as supporting evidence
+6. Submit and keep your confirmation number
+
+─────────────────────────────────
+This letter was prepared with the assistance of TruckerDispute. I certify that the information provided is accurate to the best of my knowledge.
+`;
+}
+
+// ===== COPY BUTTON =====
+copyBtn.addEventListener('click', () => {
+  navigator.clipboard.writeText(state.letter).then(() => {
+    copyBtn.textContent = '✅ Copied!';
+    setTimeout(() => copyBtn.textContent = '📋 Copy', 2000);
+  });
+});
+
+// ===== PDF GENERATION =====
+pdfBtn.addEventListener('click', generatePDF);
+
+function generatePDF() {
+  const { jsPDF } = window.jspdf;
+  if (!jsPDF) {
+    // Load jsPDF dynamically
+    const script = document.createElement('script');
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+    script.onload = () => buildPDF();
+    document.head.appendChild(script);
+    return;
+  }
+  buildPDF();
+}
+
+function buildPDF() {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  let y = 20;
+
+  // Title
+  doc.setFontSize(16);
+  doc.text('DATAQS DISPUTE LETTER', 20, y);
+  y += 10;
+  doc.setFontSize(10);
+  doc.text(`Generated: ${new Date().toLocaleDateString()}`, 20, y);
+  y += 12;
+
+  // Violation details
+  doc.setFontSize(12);
+  doc.text('CHALLENGED VIOLATION', 20, y);
+  y += 8;
+  doc.setFontSize(10);
+  const story = state.driverStory || '[driver explanation]';
+  const lines = doc.splitTextToSize(story, 170);
+  doc.text(lines, 20, y);
+  y += lines.length * 5 + 10;
+
+  // Regulation Analysis
+  if (state.matchedReg) {
+    doc.setFontSize(12);
+    doc.text('REGULATION ANALYSIS', 20, y);
+    y += 8;
+    doc.setFontSize(10);
+    if (state.matchedReg.section) {
+      doc.text(`Section: ${state.matchedReg.section}`, 20, y);
+      y += 6;
+    }
+    const rLines = doc.splitTextToSize(state.matchedReg.fullText || '', 170);
+    doc.text(rLines, 20, y);
+    y += rLines.length * 5 + 6;
+  }
+
+  // Letter body
+  doc.setFontSize(12);
+  doc.text('DISPUTE STATEMENT', 20, y);
+  y += 8;
+  doc.setFontSize(10);
+  const letterLines = doc.splitTextToSize(state.letter, 170);
+  for (let i = 0; i < letterLines.length; i++) {
+    if (y > 270) { doc.addPage(); y = 20; }
+    doc.text(letterLines[i], 20, y);
+    y += 5;
+  }
+
+  // Add photos
+  if (state.violationPhoto) {
+    doc.addPage();
+    doc.setFontSize(12);
+    doc.text('VIOLATION CITATION', 20, 20);
+    try { doc.addImage(state.violationPhoto.dataUrl, 'JPEG', 20, 30, 170, 120); } catch(e) {}
+  }
+
+  state.equipmentPhotos.forEach((p, i) => {
+    if (i === 0 && !state.violationPhoto) return;
+    doc.addPage();
+    doc.setFontSize(12);
+    doc.text(`SUPPORTING EVIDENCE (${i + 1})`, 20, 20);
+    try { doc.addImage(p.dataUrl, 'JPEG', 20, 30, 170, 120); } catch(e) {}
+  });
+
+  doc.save('trucker-dispute-letter.pdf');
+  pdfBtn.textContent = '✅ PDF Downloaded!';
+  setTimeout(() => pdfBtn.textContent = '📥 Download PDF', 3000);
+}
+
+// ===== INIT =====
+updateGenerateBtn();
+</script>
+</body>
+</html>
