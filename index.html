@@ -327,7 +327,7 @@
 <div class="container">
   <header>
     <h1>⚖️ Trucker Dispute</h1>
-    <p>Snap your ticket → explain what happened → get a DataQs-ready letter</p>
+    <p>Snap your ticket → explain what happened → get a DataQs-ready letter <span id="backendStatus" style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#ef4444;margin-left:6px;" title="Backend not connected"></span></p>
   </header>
 
   <!-- STEP 1: Upload Photos -->
@@ -423,8 +423,28 @@ fetch('data/fmcsa_regs.json').then(r=>r.json()).then(data => {
   REGS = data.sections || [];
 }).catch(() => {});
 
+// Backend health check
+(async function checkBackend() {
+  const dot = document.getElementById('backendStatus');
+  try {
+    const r = await fetch(`${BACKEND_URL}/api/health`, { signal: AbortSignal.timeout(3000) });
+    const json = await r.json();
+    if (json.status === 'ok' && json.anthropic) {
+      dot.style.background = '#22c55e';
+      dot.title = 'Backend connected — Opus vision ready';
+    } else {
+      dot.style.background = '#f59e0b';
+      dot.title = 'Backend connected (fallback mode)';
+    }
+  } catch {
+    dot.style.background = '#ef4444';
+    dot.title = 'Backend not connected — local mode only';
+  }
+})();
+
 // ===== BACKEND CONFIG =====
-const BACKEND_URL = 'https://trucker-dispute-backend.up.railway.app';
+// Change this to your deployed backend URL once it's live
+const BACKEND_URL = localStorage.getItem('trucker_dispute_backend') || 'http://localhost:3001';
 
 // ===== STEP 1: PHOTOS =====
 const uploadArea = document.getElementById('uploadArea');
