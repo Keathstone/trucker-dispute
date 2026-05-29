@@ -72,6 +72,21 @@
   .upload-area p { color: #94a3b8; font-size: 0.9rem; }
   .upload-area .icon { font-size: 2rem; margin-bottom: 8px; }
   .upload-area input[type="file"] { display: none; }
+  .desktop-upload-area { display: none; }
+  @media (hover: hover) and (pointer: fine) {
+    .desktop-upload-area { display: block; margin-top: 10px; text-align: center; }
+  }
+  .desktop-upload-btn {
+    background: #2a2a4a;
+    color: #e2e8f0;
+    border: 1px solid #3b3b5a;
+    border-radius: 8px;
+    padding: 10px 18px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .desktop-upload-btn:hover { background: #3b3b5a; }
 
   .photo-list {
     display: flex;
@@ -349,6 +364,8 @@
       <p><strong>Tap to upload</strong><br>Violation paper + photos of the truck/equipment</p>
     </div>
     <input type="file" id="fileInput" accept="image/*" multiple capture="environment">
+    <input type="file" id="fileInputDesktop" accept="image/*" multiple style="display:none">
+    <div class="desktop-upload-area"><button class="desktop-upload-btn" id="desktopUploadBtn">📁 Choose from Computer</button></div>
     <div class="photo-list" id="photoList"></div>
     <div class="violation-preview" id="violationPreview" style="display:none"></div>
   </div>
@@ -479,6 +496,14 @@ uploadArea.addEventListener('drop', (e) => {
 
 fileInput.addEventListener('change', () => {
   if (fileInput.files.length) handleFiles(fileInput.files);
+});
+
+// Desktop file picker
+const fileInputDesktop = document.getElementById('fileInputDesktop');
+const desktopUploadBtn = document.getElementById('desktopUploadBtn');
+desktopUploadBtn.addEventListener('click', () => fileInputDesktop.click());
+fileInputDesktop.addEventListener('change', () => {
+  if (fileInputDesktop.files.length) handleFiles(fileInputDesktop.files);
 });
 
 function handleFiles(files) {
